@@ -414,6 +414,32 @@ function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup> {
   return result;
 }
 
+function streamedToolMessageHasOutput(message: Record<string, unknown>): boolean {
+  const content = message.content;
+  if (!Array.isArray(content)) return false;
+  for (const block of content) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as Record<string, unknown>;
+    const kind = String(b.type ?? "").toLowerCase();
+    if (kind !== "toolresult" && kind !== "tool_result") continue;
+    const text = b.text ?? b.content;
+    if (typeof text === "string" && text.trim().length > 0) return true;
+  }
+  return false;
+}
+
+function findToolResultInHistory(history: unknown[], toolCallId: string): unknown | null {
+  for (const msg of history) {
+    if (!msg || typeof msg !== "object") continue;
+    const m = msg as Record<string, unknown>;
+    const role = String(m.role ?? "").toLowerCase();
+    if (role !== "toolresult" && role !== "tool_result") continue;
+    const id = (m.toolCallId ?? m.tool_call_id ?? m.toolUseId ?? m.tool_use_id) as string | undefined;
+    if (typeof id === "string" && id === toolCallId) return msg;
+  }
+  return null;
+}
+
 function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
   const items: ChatItem[] = [];
   const history = Array.isArray(props.messages) ? props.messages : [];
@@ -446,10 +472,18 @@ function buildChatItems(props: ChatProps): Array<ChatItem | MessageGroup> {
   }
   if (props.showThinking) {
     for (let i = 0; i < tools.length; i++) {
+      const toolMsg = tools[i] as Record<string, unknown>;
+      const toolCallId = typeof toolMsg?.toolCallId === "string" ? toolMsg.toolCallId : "";
+      const hasOutput = streamedToolMessageHasOutput(toolMsg);
+      let messageToUse: unknown = toolMsg;
+      if (!hasOutput && toolCallId) {
+        const fromHistory = findToolResultInHistory(history, toolCallId);
+        if (fromHistory) messageToUse = fromHistory;
+      }
       items.push({
         kind: "message",
-        key: messageKey(tools[i], i + history.length),
-        message: tools[i],
+        key: messageKey(messageToUse, i + history.length),
+        message: messageToUse,
       });
     }
   }

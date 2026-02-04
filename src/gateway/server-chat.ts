@@ -224,8 +224,16 @@ export function createAgentEventHandler({
     // Include sessionKey so Control UI can filter tool streams per session.
     const agentPayload = sessionKey ? { ...evt, sessionKey } : evt;
     const last = agentRunSeq.get(evt.runId) ?? 0;
-    if (evt.stream === "tool" && !shouldEmitToolEvents(evt.runId, sessionKey)) {
+    const toolPhase = evt.stream === "tool" ? evt.data?.phase : undefined;
+    const isToolResult = toolPhase === "result";
+    if (evt.stream === "tool" && !isToolResult && !shouldEmitToolEvents(evt.runId, sessionKey)) {
       agentRunSeq.set(evt.runId, evt.seq);
+      return;
+    }
+    if (evt.stream === "tool" && isToolResult && !shouldEmitToolEvents(evt.runId, sessionKey)) {
+      agentRunSeq.set(evt.runId, evt.seq);
+      broadcast("agent", agentPayload);
+      if (sessionKey) nodeSendToSession(sessionKey, "agent", agentPayload);
       return;
     }
     if (evt.seq !== last + 1) {

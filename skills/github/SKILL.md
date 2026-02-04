@@ -8,6 +8,14 @@ metadata: {"openclaw":{"emoji":"🐙","requires":{"bins":["gh"]},"install":[{"id
 
 Use the `gh` CLI to interact with GitHub. Always specify `--repo owner/repo` when not in a git directory, or use URLs directly.
 
+## Authentication (Docker / bot)
+
+When the gateway runs in Docker, the bot needs a GitHub PAT so `gh` and `git` can access repos. Set `GITHUB_TOKEN` (or `GH_TOKEN`) in the gateway environment; the token is not stored in the skill.
+
+- **docker-compose:** Add `GITHUB_TOKEN=ghp_...` to your `.env` (same directory as `docker-compose.yml`). The gateway service already passes `GITHUB_TOKEN` through. Restart the gateway after adding: `docker compose up -d openclaw-gateway`.
+- **One-off in container:** `docker exec -it <gateway-container> sh -c 'export GITHUB_TOKEN=ghp_...; gh auth status'` to confirm (do not commit the token).
+- **PAT scope:** For full `gh auth login --with-token` the PAT needs `read:org`. For API and git over HTTPS, a PAT with `repo` (and optionally `read:org`) used via `GITHUB_TOKEN` is enough.
+
 ## Pull Requests
 
 Check CI status on a PR:

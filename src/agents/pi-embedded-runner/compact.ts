@@ -139,10 +139,14 @@ export async function compactEmbeddedPiSessionDirect(
     });
 
     if (!apiKeyInfo.apiKey) {
-      if (apiKeyInfo.mode !== "aws-sdk") {
+      if (apiKeyInfo.mode !== "aws-sdk" && model.provider !== "ollama") {
         throw new Error(
           `No API key resolved for provider "${model.provider}" (auth mode: ${apiKeyInfo.mode}).`,
         );
+      }
+      // Ollama and other local providers: set placeholder key so SDK does not throw "No API key found"
+      if (model.provider === "ollama") {
+        authStorage.setRuntimeApiKey(model.provider, "ollama-local");
       }
     } else if (model.provider === "github-copilot") {
       const { resolveCopilotApiToken } = await import("../../providers/github-copilot-token.js");

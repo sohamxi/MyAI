@@ -39,17 +39,33 @@ function extractToolOutputText(value: unknown): string | null {
   const record = value as Record<string, unknown>;
   if (typeof record.text === "string") return record.text;
   const content = record.content;
-  if (!Array.isArray(content)) return null;
-  const parts = content
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const entry = item as Record<string, unknown>;
-      if (entry.type === "text" && typeof entry.text === "string") return entry.text;
-      return null;
-    })
-    .filter((part): part is string => Boolean(part));
-  if (parts.length === 0) return null;
-  return parts.join("\n");
+  if (Array.isArray(content)) {
+    const parts = content
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const entry = item as Record<string, unknown>;
+        if (entry.type === "text" && typeof entry.text === "string") return entry.text;
+        return null;
+      })
+      .filter((part): part is string => Boolean(part));
+    if (parts.length > 0) return parts.join("\n");
+  }
+  // AgentToolResult shape: content is object with nested content array (e.g. from transcript or wrapped payload).
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const inner = (content as Record<string, unknown>).content;
+    if (Array.isArray(inner)) {
+      const parts = inner
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const entry = item as Record<string, unknown>;
+          if (entry.type === "text" && typeof entry.text === "string") return entry.text;
+          return null;
+        })
+        .filter((part): part is string => Boolean(part));
+      if (parts.length > 0) return parts.join("\n");
+    }
+  }
+  return null;
 }
 
 function formatToolOutput(value: unknown): string | null {

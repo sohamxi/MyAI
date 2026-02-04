@@ -185,6 +185,17 @@ export function createAnthropicPayloadLogger(params: {
   const recordUsage: AnthropicPayloadLogger["recordUsage"] = (messages, error) => {
     const usage = findLastAssistantUsage(messages);
     const errorMessage = formatError(error);
+    // Debug: Log assistant messages with their usage
+    const assistantMsgs = messages.filter((m) => (m as { role?: string }).role === "assistant");
+    log.debug("recordUsage debug", {
+      totalMessages: messages.length,
+      assistantCount: assistantMsgs.length,
+      lastAssistantUsage: usage,
+      lastAssistantStopReason:
+        assistantMsgs.length > 0
+          ? (assistantMsgs[assistantMsgs.length - 1] as { stopReason?: string }).stopReason
+          : undefined,
+    });
     if (!usage) {
       if (errorMessage) {
         record({

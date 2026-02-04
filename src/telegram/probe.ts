@@ -104,10 +104,17 @@ export async function probeTelegram(
     result.elapsedMs = Date.now() - started;
     return result;
   } catch (err) {
+    const rawMessage = err instanceof Error ? err.message : String(err);
+    const isAbort =
+      (err instanceof Error && (err as Error & { name?: string }).name === "AbortError") ||
+      rawMessage === "The operation was aborted";
+    const error = isAbort
+      ? "Request timed out (check network or firewall to api.telegram.org)"
+      : rawMessage;
     return {
       ...result,
       status: err instanceof Response ? err.status : result.status,
-      error: err instanceof Error ? err.message : String(err),
+      error,
       elapsedMs: Date.now() - started,
     };
   }

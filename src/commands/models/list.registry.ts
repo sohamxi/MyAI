@@ -44,9 +44,57 @@ export async function loadModelRegistry(cfg: OpenClawConfig) {
   await ensureOpenClawModelsJson(cfg);
   const agentDir = resolveOpenClawAgentDir();
   const authStorage = new AuthStorage(join(agentDir, "auth.json"));
-  const registry = new ModelRegistry(authStorage, join(agentDir, "models.json"));
+  const modelsJsonPath = join(agentDir, "models.json");
+  const registry = new ModelRegistry(authStorage, modelsJsonPath);
   const models = registry.getAll() as Model<Api>[];
   const availableModels = registry.getAvailable() as Model<Api>[];
+
+  // Also include custom providers from models.json that aren't in the SDK's built-in catalog
+  const fs = await import("node:fs/promises");
+  try {
+    const modelsJsonRaw = await fs.readFile(modelsJsonPath, "utf8");
+    const modelsJson = JSON.parse(modelsJsonRaw) as {
+      providers?: Record<
+        string,
+        {
+          baseUrl?: string;
+          models?: Array<{
+            id?: string;
+            name?: string;
+            contextWindow?: number;
+            reasoning?: boolean;
+            input?: Array<"text" | "image">;
+          }>;
+        }
+      >;
+    };
+    const existingKeys = new Set(models.map((m) => modelKey(m.provider, m.id)));
+    for (const [providerName, providerConfig] of Object.entries(modelsJson.providers ?? {})) {
+      for (const model of providerConfig.models ?? []) {
+        const modelId = String(model?.id ?? "").trim();
+        if (!modelId) continue;
+        const key = modelKey(providerName, modelId);
+        if (existingKeys.has(key)) continue;
+        existingKeys.add(key);
+        // Create a Model-like object for custom providers
+        models.push({
+          id: modelId,
+          name: String(model?.name ?? modelId).trim() || modelId,
+          provider: providerName,
+          baseUrl: providerConfig.baseUrl ?? "",
+          contextWindow:
+            typeof model?.contextWindow === "number" && model.contextWindow > 0
+              ? model.contextWindow
+              : undefined,
+          reasoning: typeof model?.reasoning === "boolean" ? model.reasoning : undefined,
+          input: Array.isArray(model?.input) ? model.input : ["text"],
+        } as Model<Api>);
+      }
+    }
+  } catch {
+    // Ignore errors reading models.json - custom providers are optional
+  }
+
   const availableKeys = new Set(availableModels.map((model) => modelKey(model.provider, model.id)));
   return { registry, models, availableKeys };
 }

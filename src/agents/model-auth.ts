@@ -202,6 +202,11 @@ export async function resolveApiKeyForProvider(params: {
   }
 
   const normalized = normalizeProviderId(provider);
+  // Local Ollama server does not require an API key; use placeholder so SDK does not throw
+  if (normalized === "ollama") {
+    return { apiKey: "ollama-local", source: "local (no key required)", mode: "api-key" };
+  }
+
   if (authOverride === undefined && normalized === "amazon-bedrock") {
     return resolveAwsSdkAuthInfo();
   }
@@ -213,6 +218,11 @@ export async function resolveApiKeyForProvider(params: {
         'No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.2 (ChatGPT OAuth) or set OPENAI_API_KEY for openai/gpt-5.2.',
       );
     }
+  }
+
+  // Final fallback: local Ollama never requires an API key; use placeholder so SDK does not throw
+  if (normalized === "ollama") {
+    return { apiKey: "ollama-local", source: "local (no key required)", mode: "api-key" };
   }
 
   const authStorePath = resolveAuthStorePathForDisplay(params.agentDir);
@@ -286,6 +296,7 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
     venice: "VENICE_API_KEY",
     mistral: "MISTRAL_API_KEY",
     opencode: "OPENCODE_API_KEY",
+    "wisdom-gate": "WISDOM_GATE_API_KEY",
   };
   const envVar = envMap[normalized];
   if (!envVar) return null;

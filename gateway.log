@@ -1,0 +1,15 @@
+openclaw-gateway-1  | 2026-01-31T16:47:59.615019944Z [90m2026-01-31T16:47:59.613Z[39m [35m[canvas][39m [36mhost mounted at http://0.0.0.0:18789/__openclaw__/canvas/ (root /home/node/.openclaw/canvas)[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.735467240Z [90m2026-01-31T16:47:59.735Z[39m [36m[heartbeat][39m [36mstarted[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.743402784Z [90m2026-01-31T16:47:59.743Z[39m [36m[gateway][39m [36magent model: wisdom-gate/gemini-2.5-flash[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.747057214Z [90m2026-01-31T16:47:59.746Z[39m [36m[gateway][39m [36mlistening on ws://0.0.0.0:18789 (PID 7)[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.752896367Z [90m2026-01-31T16:47:59.752Z[39m [36m[gateway][39m [36mlog file: /tmp/openclaw/openclaw-2026-01-31.log[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.801277444Z [90m2026-01-31T16:47:59.800Z[39m [35m[browser/service][39m [36mBrowser control service ready (profiles=2)[39m
+openclaw-gateway-1  | 2026-01-31T16:47:59.957696717Z [90m2026-01-31T16:47:59.957Z[39m [36m[gateway][39m [36mupdate available (latest): v2026.1.30 (current v2026.1.29). Run: openclaw update[39m
+openclaw-gateway-1  | 2026-01-31T16:48:00.743758895Z [90m2026-01-31T16:48:00.743Z[39m [34m[telegram][39m [36m[default] starting provider (@ShonkuSir_bot)[39m
+openclaw-gateway-1  | 2026-01-31T16:48:00.755401569Z [90m2026-01-31T16:48:00.754Z[39m [34m[telegram][39m [36mautoSelectFamily=false (default-node22)[39m
+openclaw-gateway-1  | 2026-01-31T16:48:06.577432148Z [90m2026-01-31T16:48:06.576Z[39m [36m[ws][39m [36mwebchat connected conn=5af3cce1-fba8-41ef-9237-9690796fba5e remote=172.19.0.1 client=openclaw-control-ui webchat vdev[39m
+openclaw-gateway-1  | 2026-01-31T16:48:06.702325293Z [90m2026-01-31T16:48:06.699Z[39m [36m[ws][39m [36m⇄ res ✓ chat.history 64ms conn=5af3cce1…ba5e id=d04fa63b…3737[39m
+openclaw-gateway-1  | 2026-01-31T16:50:33.311611152Z [90m2026-01-31T16:50:33.311Z[39m [36m[ws][39m [36mwebchat disconnected code=1001 reason=n/a conn=5af3cce1-fba8-41ef-9237-9690796fba5e[39m
+openclaw-gateway-1  | 2026-01-31T16:50:33.843712618Z [90m2026-01-31T16:50:33.843Z[39m [36m[ws][39m [36mwebchat connected conn=5a82e1ec-f453-4e4e-b05d-5ef64fb01bd4 remote=172.19.0.1 client=openclaw-control-ui webchat vdev[39m
+openclaw-gateway-1  | 2026-01-31T16:57:12.868442296Z [90m2026-01-31T16:57:12.868Z[39m [36m[ws][39m [36mwebchat disconnected code=1001 reason=n/a conn=5a82e1ec-f453-4e4e-b05d-5ef64fb01bd4[39m
+openclaw-gateway-1  | 2026-01-31T16:57:13.310317787Z [90m2026-01-31T16:57:13.309Z[39m [36m[ws][39m [36mwebchat connected conn=67fec624-8697-42a0-a453-559e76908484 remote=172.19.0.1 client=openclaw-control-ui webchat vdev[39m

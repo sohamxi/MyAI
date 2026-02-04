@@ -94,6 +94,34 @@ docker compose -f docker-compose.withbrew.yml up -d openclaw-gateway
 
 Then from any other system, use the SSH tunnel and browser steps above.
 
+## Retrying skill installs (container stays up)
+
+If some skill installations failed during onboarding (e.g. network timeouts, brew/npm in Docker), you can retry **without restarting the gateway or container**:
+
+1. **From the dashboard**
+   - Open the Control UI (via tunnel: `http://localhost:18789/`).
+   - Go to **Skills**.
+   - For each skill that shows as missing requirements, click **Install** (or the installer label, e.g. "Install via brew").
+   - Installs run inside the gateway process; the container stays up.
+
+2. **From the CLI (same config as gateway)**
+   - On the server, run the configure wizard for the skills section only (uses the same mounted config, no gateway restart):
+     ```bash
+     docker compose -f docker-compose.withbrew.yml run --rm --no-TTY openclaw-cli configure --section skills
+     ```
+   - When prompted, select the skills whose dependencies you want to install.
+
+3. **See which skills are missing**
+   - List status and missing requirements:
+     ```bash
+     docker compose -f docker-compose.withbrew.yml run --rm --no-TTY openclaw-cli skills check
+     ```
+   - Or run `openclaw doctor` for a broader health check.
+
+If installs keep failing (e.g. timeout), check gateway logs for the exact error. You can set `skills.install.nodeManager` in `~/.openclaw/openclaw.json` to `pnpm` or `bun` if that package manager is available in the container and works better than npm. See [Skills](/tools/skills) and [Skills config](/tools/skills-config).
+
+**Docker with Homebrew:** When using `docker-compose.withbrew.yml`, the Compose file sets `NPM_CONFIG_PREFIX=/home/node/.local` and adds `/home/node/.local/bin` to `PATH` so npm global installs (e.g. clawhub, mcporter) succeed as the node user. It also sets `HOMEBREW_NO_AUTO_UPDATE=1` so brew installs do not hang on updates. The dashboard uses a 5‑minute timeout per skill install; heavy formulas (e.g. ffmpeg) may need that full time. After changing the Compose env, run `docker compose -f docker-compose.withbrew.yml up -d --force-recreate openclaw-gateway` so the gateway picks up the new environment.
+
 ## See also
 
 - [Control UI (browser)](/web/control-ui) – features and auth options.

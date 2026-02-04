@@ -187,6 +187,58 @@ docker compose run --rm openclaw-cli channels add --channel discord --token "<to
 
 Docs: [WhatsApp](/channels/whatsapp), [Telegram](/channels/telegram), [Discord](/channels/discord)
 
+### Local Ollama (cost savings and fallback)
+
+The Docker Compose stack includes an **Ollama** service so the bot can use local open-source models for lower-priority or common tasks. This reduces API cost, cuts reliance on external providers, and keeps the bot usable when APIs are down or rate-limited.
+
+**Design:**
+- Ollama runs as a separate container (`openclaw-ollama`) with a persistent volume for models.
+- The gateway connects to Ollama at `http://ollama:11434/v1` (Docker network).
+- You add the Ollama provider to your config and optionally add an Ollama model to `agents.defaults.model.fallbacks`.
+
+**Steps:**
+
+1. **Merge Ollama into your config** (run from host, same env as `docker-setup.sh`):
+
+```bash
+OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}" ./scripts/docker-ollama-merge-config.sh
+```
+
+2. **Start (or restart) the stack** so the Ollama container is running:
+
+```bash
+docker compose up -d
+```
+
+3. **Pull at least one model** (e.g. lightweight `llama3.2`):
+
+```bash
+docker exec openclaw-ollama ollama pull llama3.2
+```
+
+4. **Use Ollama as fallback** — in `~/.openclaw/openclaw.json`, add an Ollama model to fallbacks so the bot uses it when the primary (API) model fails or for lower-priority turns:
+
+```json5
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-opus-4-5",
+        "fallbacks": ["ollama/llama3.2"]
+      }
+    }
+  }
+}
+```
+
+5. **Optional:** Switch to an Ollama model for a session via `/model ollama/llama3.2` in chat, or set `primary` to an Ollama model for local-first.
+
+**Notes:**
+- Models are stored in the `openclaw-ollama-data` volume and persist across restarts.
+- Expose Ollama on the host with `OLLAMA_HOST_PORT=11434` (default) in `.env` if you want to pull/run models from the host.
+- For GPU, uncomment the `deploy.resources.reservations` block for the `ollama` service in `docker-compose.yml` and ensure the host has the NVIDIA container toolkit.
+- See [Ollama provider](/providers/ollama) for model recommendations and more config options.
+
 ### Health check
 
 ```bash

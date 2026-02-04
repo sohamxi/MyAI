@@ -89,6 +89,52 @@ export async function loadModelCatalog(params?: {
         models.push({ id, name, provider, contextWindow, reasoning, input });
       }
 
+      // Also read custom providers from models.json that aren't in the SDK's built-in catalog.
+      // The SDK's ModelRegistry.getAll() only returns built-in models, so we need to supplement
+      // with custom providers defined in openclaw.json.
+      const fs = await import("node:fs/promises");
+      const modelsJsonPath = join(agentDir, "models.json");
+      try {
+        const modelsJsonRaw = await fs.readFile(modelsJsonPath, "utf8");
+        const modelsJson = JSON.parse(modelsJsonRaw) as {
+          providers?: Record<
+            string,
+            {
+              models?: Array<{
+                id?: string;
+                name?: string;
+                contextWindow?: number;
+                reasoning?: boolean;
+                input?: Array<"text" | "image">;
+              }>;
+            }
+          >;
+        };
+        const existingKeys = new Set(models.map((m) => `${m.provider}/${m.id}`.toLowerCase()));
+        for (const [providerName, providerConfig] of Object.entries(modelsJson.providers ?? {})) {
+          for (const model of providerConfig.models ?? []) {
+            const modelId = String(model?.id ?? "").trim();
+            if (!modelId) continue;
+            const key = `${providerName}/${modelId}`.toLowerCase();
+            if (existingKeys.has(key)) continue; // Skip if already in catalog
+            existingKeys.add(key);
+            models.push({
+              id: modelId,
+              name: String(model?.name ?? modelId).trim() || modelId,
+              provider: providerName,
+              contextWindow:
+                typeof model?.contextWindow === "number" && model.contextWindow > 0
+                  ? model.contextWindow
+                  : undefined,
+              reasoning: typeof model?.reasoning === "boolean" ? model.reasoning : undefined,
+              input: Array.isArray(model?.input) ? model.input : undefined,
+            });
+          }
+        }
+      } catch {
+        // Ignore errors reading models.json - custom providers are optional
+      }
+
       if (models.length === 0) {
         // If we found nothing, don't cache this result so we can try again.
         modelCatalogPromise = null;

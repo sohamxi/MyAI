@@ -41,7 +41,7 @@ Tool params:
 - `task` (required)
 - `label?` (optional)
 - `agentId?` (optional; spawn under another agent id if allowed)
-- `model?` (optional; overrides the sub-agent model; invalid values are skipped and the sub-agent runs on the default model with a warning in the tool result)
+- `model?` (optional; overrides the sub-agent model; must be a **catalog model ref** e.g. `wisdom-gate/claude-opus-4-5` or `wisdom-gate/claude-opus-4-5-20251101` — the provider and model id must exist in `models.providers.*.models` in config; otherwise the patch is rejected and the sub-agent runs on the default model)
 - `thinking?` (optional; overrides thinking level for the sub-agent run)
 - `runTimeoutSeconds?` (default `0`; when set, the sub-agent run is aborted after N seconds)
 - `cleanup?` (`delete|keep`, default `keep`)

@@ -55,6 +55,20 @@ export function extractText(message: unknown): string | null {
       return processed;
     }
   }
+  // Tool result messages: content is AgentToolResult object { content: [{ type: "text", text }], details }.
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const inner = (content as Record<string, unknown>).content;
+    if (Array.isArray(inner)) {
+      const parts = inner
+        .map((p) => {
+          const item = p as Record<string, unknown>;
+          if (item.type === "text" && typeof item.text === "string") return item.text;
+          return null;
+        })
+        .filter((v): v is string => typeof v === "string");
+      if (parts.length > 0) return parts.join("\n");
+    }
+  }
   if (typeof m.text === "string") {
     const processed = role === "assistant" ? stripThinkingTags(m.text) : stripEnvelope(m.text);
     return processed;

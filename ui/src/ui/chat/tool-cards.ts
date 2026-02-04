@@ -140,5 +140,20 @@ function coerceArgs(value: unknown): unknown {
 function extractToolText(item: Record<string, unknown>): string | undefined {
   if (typeof item.text === "string") return item.text;
   if (typeof item.content === "string") return item.content;
+  // Tool result block with content as AgentToolResult object (nested content array).
+  const content = item.content;
+  if (content && typeof content === "object" && !Array.isArray(content)) {
+    const inner = (content as Record<string, unknown>).content;
+    if (Array.isArray(inner)) {
+      const parts = inner
+        .map((p) => {
+          const entry = p as Record<string, unknown>;
+          if (entry.type === "text" && typeof entry.text === "string") return entry.text;
+          return null;
+        })
+        .filter((v): v is string => typeof v === "string");
+      if (parts.length > 0) return parts.join("\n");
+    }
+  }
   return undefined;
 }

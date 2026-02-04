@@ -1,6 +1,27 @@
 services:
+  # Local LLM server for cost savings and offline fallback (OpenClaw connects via http://ollama:11434/v1)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: openclaw-ollama
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "${OLLAMA_HOST_PORT:-11434}:11434"
+    restart: unless-stopped
+    # Optional: GPU access (uncomment if host has NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
   openclaw-gateway:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
+    depends_on:
+      ollama:
+        condition: service_started
     environment:
       HOME: /home/node
       TERM: xterm-256color
@@ -8,6 +29,14 @@ services:
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      # Debug: Enable Anthropic API payload logging
+      OPENCLAW_ANTHROPIC_PAYLOAD_LOG: "true"
+      # Google Workspace (gogcli) keyring password
+      GOG_KEYRING_PASSWORD: "shonku2026"
+      # GitHub: set GITHUB_TOKEN (or GH_TOKEN) in .env so gh/git work in the bot (e.g. sohamxi PAT)
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      # Ensure Homebrew binaries (gogcli) are in PATH
+      PATH: "/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
@@ -16,6 +45,7 @@ services:
       - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
     init: true
     restart: unless-stopped
+    entrypoint: ["/home/node/.openclaw/persistent-setup/entrypoint-wrapper.sh"]
     command:
       [
         "node",
@@ -36,10 +66,18 @@ services:
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      # Google Workspace (gogcli) keyring password
+      GOG_KEYRING_PASSWORD: "shonku2026"
+      # Ensure Homebrew binaries (gogcli) are in PATH
+      PATH: "/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
     stdin_open: true
     tty: true
     init: true
-    entrypoint: ["node", "dist/index.js"]
+    entrypoint: ["/home/node/.openclaw/persistent-setup/entrypoint-wrapper.sh", "node", "dist/index.js"]
+
+volumes:
+  ollama-data:
+    name: openclaw-ollama-data
