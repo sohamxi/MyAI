@@ -11,4 +11,13 @@ if (module.enableCompileCache && !process.env.NODE_DISABLE_COMPILE_CACHE) {
   }
 }
 
+// [PATCH] Ensure Go is in PATH for skills
+if (
+  process.platform === "linux" &&
+  process.env.PATH &&
+  !process.env.PATH.includes("/usr/local/go/bin")
+) {
+  process.env.PATH = `${process.env.PATH}:/usr/local/go/bin`;
+}
+
 await import("./dist/entry.js");

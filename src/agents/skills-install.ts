@@ -169,6 +169,10 @@ function buildInstallCommand(
       if (!spec.formula) {
         return { argv: null, error: "missing brew formula" };
       }
+      // [PATCH] Use apt-get if brew is missing and we are on Linux
+      if (process.platform === "linux" && !hasBinary("brew") && hasBinary("apt-get")) {
+        return { argv: ["apt-get", "install", "-y", spec.formula] };
+      }
       return { argv: ["brew", "install", spec.formula] };
     }
     case "node": {
@@ -443,17 +447,54 @@ export async function installSkill(params: SkillInstallRequest): Promise<SkillIn
   }
 
   const brewExe = hasBinary("brew") ? "brew" : resolveBrewExecutable();
+
+  // [PATCH] Skip brew check/install if the target binary is already present
+  if (spec.kind === "brew" || spec.kind === "go") {
+    let binName = spec.kind === "go" ? "go" : spec.formula;
+    if (!binName && spec.kind === "brew") binName = spec.formula;
+
+    if (spec.kind === "go" && !hasBinary("go") && fs.existsSync("/usr/local/go/bin/go")) {
+      return withWarnings(
+        {
+          ok: true,
+          message: "go is installed (system fallback /usr/local/go)",
+          stdout: "",
+          stderr: "",
+          code: 0,
+        },
+        warnings,
+      );
+    }
+
+    if (binName && hasBinary(binName)) {
+      return withWarnings(
+        {
+          ok: true,
+          message: `${binName} is already installed (system)`,
+          stdout: "",
+          stderr: "",
+          code: 0,
+        },
+        warnings,
+      );
+    }
+  }
+
   if (spec.kind === "brew" && !brewExe) {
-    return withWarnings(
-      {
-        ok: false,
-        message: "brew not installed",
-        stdout: "",
-        stderr: "",
-        code: null,
-      },
-      warnings,
-    );
+    // If we fell back to apt-get in buildInstallCommand, we don't need brew here.
+    const isAptFallback = process.platform === "linux" && hasBinary("apt-get");
+    if (!isAptFallback) {
+      return withWarnings(
+        {
+          ok: false,
+          message: "brew not installed",
+          stdout: "",
+          stderr: "",
+          code: null,
+        },
+        warnings,
+      );
+    }
   }
   if (spec.kind === "uv" && !hasBinary("uv")) {
     if (brewExe) {

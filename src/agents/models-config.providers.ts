@@ -69,8 +69,9 @@ const QWEN_PORTAL_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
-const OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
-const OLLAMA_API_BASE_URL = "http://127.0.0.1:11434";
+const OLLAMA_API_BASE_URL =
+  process.env.OLLAMA_HOST_URL?.replace(/\/v1\/?$/, "") || "http://127.0.0.1:11434";
+const OLLAMA_BASE_URL = `${OLLAMA_API_BASE_URL}/v1`;
 const OLLAMA_DEFAULT_CONTEXT_WINDOW = 128000;
 const OLLAMA_DEFAULT_MAX_TOKENS = 8192;
 const OLLAMA_DEFAULT_COST = {
@@ -129,6 +130,7 @@ async function discoverOllamaModels(): Promise<ModelDefinitionConfig[]> {
         // See: https://github.com/badlogic/pi-mono/issues/1205
         params: {
           streaming: false,
+          stop: ["<|eot_id|>", "<|end_of_text|>", "User:", "Assistant:"],
         },
       };
     });
@@ -490,13 +492,13 @@ export async function resolveImplicitProviders(params: {
     break;
   }
 
-  // Ollama provider - only add if explicitly configured
+  // Ollama provider - only add if explicitly configured or discovered
   const ollamaKey =
     resolveEnvApiKeyVarName("ollama") ??
     resolveApiKeyFromProfiles({ provider: "ollama", store: authStore });
-  if (ollamaKey) {
-    providers.ollama = { ...(await buildOllamaProvider()), apiKey: ollamaKey };
-  }
+
+  // ALWAYS add Ollama if explicitly configured or found, defaulting to local key
+  providers.ollama = { ...(await buildOllamaProvider()), apiKey: ollamaKey ?? "ollama-local" };
 
   return providers;
 }
